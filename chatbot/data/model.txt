@@ -1,0 +1,202 @@
+from django.utils import timezone
+import datetime
+from django.db import models
+from django.contrib.auth.models import AbstractUser
+from django.contrib.auth import get_user_model
+
+class UserProfile(AbstractUser):
+    """
+    Custom user model that inherits from AbstractUser.
+    This includes fields: username, email, password, first_name, last_name, etc.
+    We add extra fields as needed, for example 'phone_number'.
+    """
+    # Extra fields
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
+
+    # User Tier Information
+    FREE = 'free'
+    PREMIUM = 'premium'
+    SUBSCRIPTION_CHOICES = [
+        (FREE, 'Free'),
+        (PREMIUM, 'Premium'),
+    ]
+
+    subscription_type = models.CharField(
+        max_length=10,
+        choices=SUBSCRIPTION_CHOICES,
+        default=FREE,
+        db_index=True,         
+    )
+
+    squirll_id = models.EmailField(
+        unique=True,
+        null=True, blank=True,
+        help_text="Pseudo e-mail to receive email receipts. "
+    )
+
+
+    @property
+    def is_premium(self) -> bool:
+        """True for paid accounts, False for free accounts."""
+        return self.subscription_type == self.PREMIUM
+
+    
+
+    def __str__(self):
+        # Show username or any other identifying field
+        return self.username
+
+
+# Receipt Model
+class Receipt(models.Model):
+    
+    user = models.ForeignKey(
+        get_user_model(), 
+        on_delete=models.CASCADE, 
+        related_name="receipts"
+    )
+    company = models.CharField(max_length=255)
+    address = models.TextField(blank=True, null=True)
+    date = models.DateField()
+    time = models.TimeField(blank=True, null=True)
+    sub_total = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    tax = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    tip = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    receipt_type = models.TextField(blank=True)
+
+    receipt_currency_symbol = models.CharField(blank=True, max_length=5)
+    receipt_currency_code = models.CharField(blank=True, max_length=5)
+    item_count = models.PositiveIntegerField()
+    raw_email = models.TextField(blank=True, null=True)
+    raw_images = models.JSONField(
+        blank=True,
+        default=list,
+        help_text="List of all uploaded image URLs for this receipt."
+    )
+    # Many-to-many to Tag
+    tags = models.ManyToManyField(
+        "Tag",
+        blank=True,
+        related_name="receipts"
+    )
+    
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
+        help_text="Timestamp when the receipt record was created."
+    )
+
+    manual_entry = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.company} on {self.date}"
+
+
+
+# Item Model
+class Item(models.Model):
+    receipt = models.ForeignKey(Receipt, on_delete=models.CASCADE, related_name="items")
+    description = models.TextField()
+    product_id = models.TextField(blank=True)
+    quantity = models.DecimalField(blank=True, null=True, default=1, decimal_places=5, max_digits=10)
+    quantity_unit = models.TextField(blank=True, null=True, default="Units")
+    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    total_price = models.DecimalField(max_digits=10, decimal_places=2)
+    def __str__(self):
+        return f"{self.description} (x{self.quantity}) => {self.total_price}"
+
+
+
+
+class Email(models.Model):
+    """
+    Model to store information about emails associated with a user.
+    Each user can have many emails, but this model is not related to other models.
+    """
+    user = models.ForeignKey(
+        get_user_model(), 
+        on_delete=models.CASCADE, 
+        related_name="emails"
+    )
+
+    sender = models.TextField()
+    html = models.TextField()
+    subject = models.CharField(max_length=255, blank=True, null=True)
+    company = models.CharField(max_length=255, default="Miscellaneous")
+
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Timestamp when the email record was created."
+    )
+
+    MARKETING = "marketing"
+    MESSAGE   = "message"
+
+    CATEGORY_CHOICES = [
+        (MARKETING, "Marketing / Promotions"),
+        (MESSAGE,   "Primary / Messages"),
+    ]
+
+    category = models.CharField(
+        max_length=10,
+        choices=CATEGORY_CHOICES,
+        default=MESSAGE,
+        db_index=True,
+        help_text="High-level classification used in the inbox UI.",
+    )
+
+    def __str__(self):
+        return f"Email to {self.user.email} from {self.sender} - {self.subject}"
+
+
+class Tag(models.Model):
+    """
+    User-defined tag with a name and color.
+    Each user has their own set of tags.
+    """
+    user = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.CASCADE,
+        related_name="tags"
+    )
+    name = models.CharField(max_length=50)
+    class Meta:
+        unique_together = ("user", "name")
+
+    def __str__(self):
+        return f"{self.name} (User: {self.user.username})"
+    
+
+
+class UsageTracker(models.Model):
+    """
+    Tracks how many times a user performs a specific action each day.
+    E.g., how many receipts they have uploaded, how many chatbot queries, etc.
+    """
+
+    RECEIPT_UPLOAD = 'receipt_upload'
+    CHATBOT_USE = 'chatbot_use'
+    REPORT_DOWNLOAD = 'report_upload'
+    # add more usage "types" as needed
+
+    USAGE_CHOICES = [
+        (RECEIPT_UPLOAD, 'Receipt Upload'),
+        (CHATBOT_USE, 'Chatbot Use'),
+        (REPORT_DOWNLOAD, 'Report Download'),
+        # etc.
+    ]
+
+    user = models.ForeignKey(get_user_model(), on_delete=models.CASCADE, related_name="trackers")
+    usage_type = models.CharField(max_length=50, choices=USAGE_CHOICES)
+    date = models.DateField(default=datetime.date.today)
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('user', 'usage_type', 'date')
+
+    def __str__(self):
+        return (f"{self.user.username} - {self.usage_type} "
+                f"on {self.date}: {self.count}")
+
