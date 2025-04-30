@@ -1,6 +1,6 @@
-# Receipt Management System
+# AI Expense Tracker
 
-A full-stack receipt management platform built with Django REST Framework, featuring OCR-powered receipt scanning, automated expense categorization using AI, and real-time analytics dashboards.
+A full-stack expense tracking platform built with Django REST Framework, featuring OCR-powered receipt scanning, automated expense categorization using AI, and real-time analytics dashboards.
 
 ## Features
 
