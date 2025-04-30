@@ -1,6 +1,6 @@
 # CLAUDE.md - Comprehensive Project Guide
 
-This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with the Squirll expense management system.
+This file provides comprehensive guidance to Claude Code (claude.ai/code) when working with the Receipt Management expense management system.
 
 ## Table of Contents
 
@@ -49,13 +49,13 @@ python manage.py createsuperuser
 python manage.py runserver
 
 # With specific environment
-python manage.py runserver --settings=squirll.settings.development
+python manage.py runserver --settings=receipt_management.settings.development
 
 # Run Celery worker (separate terminal)
-celery -A squirll worker --loglevel=info
+celery -A receipt_management worker --loglevel=info
 
 # Run Celery beat scheduler (separate terminal)
-celery -A squirll beat --loglevel=info
+celery -A receipt_management beat --loglevel=info
 ```
 
 ### Testing
@@ -82,7 +82,7 @@ pytest --cov=.
 
 ### Multi-Environment Settings Structure
 ```
-squirll/settings/
+receipt_management/settings/
 ├── __init__.py
 ├── base.py              # Common settings and configurations
 ├── development.py       # Development environment (Redis optional)
@@ -141,7 +141,7 @@ class UserProfile(AbstractUser):
     )
     
     # Email receipts integration
-    squirll_id = models.EmailField(
+    receipt_management_id = models.EmailField(
         unique=True, null=True, blank=True,
         help_text="Pseudo e-mail to receive email receipts"
     )
@@ -317,7 +317,7 @@ POST /core/token/refresh/         # Refresh access token
 POST /core/token/blacklist/       # Blacklist refresh token
 
 # User Onboarding
-POST /core/user/set-squirll-id/   # Set email receipt ID
+POST /core/user/set-receipt_management-id/   # Set email receipt ID
 POST /core/user/set-phone/        # Initiate phone verification
 POST /core/user/auth-set-phone/   # Complete phone verification
 
@@ -643,7 +643,7 @@ def handle_email_received(sender, user, email_id, subject, category, company, **
 
 ### WebSocket URL Pattern
 ```python
-# squirll/routing.py
+# receipt_management/routing.py
 websocket_urlpatterns = [
     re_path(r'^ws/notify/(?P<user_id>\d+)/$', UserNotificationConsumer.as_asgi()),
 ]
@@ -653,7 +653,7 @@ websocket_urlpatterns = [
 
 ## Settings & Environment Management
 
-### Environment Validation (`squirll/settings/env_utils.py`)
+### Environment Validation (`receipt_management/settings/env_utils.py`)
 ```python
 class EnvValidator:
     """Validates environment-specific configuration."""
@@ -822,7 +822,7 @@ class ReceiptProcessingTestCase(TestCase):
 ```python
 # pytest.ini
 [tool:pytest]
-DJANGO_SETTINGS_MODULE = squirll.settings.development
+DJANGO_SETTINGS_MODULE = receipt_management.settings.development
 python_files = tests.py test_*.py *_tests.py
 python_classes = Test*
 python_functions = test_*
@@ -1010,8 +1010,8 @@ CACHES = {
 
 #### Asynchronous Tasks
 ```python
-# squirll/celery.py
-app = Celery('squirll')
+# receipt_management/celery.py
+app = Celery('receipt_management')
 app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
@@ -1122,17 +1122,17 @@ CSRF_COOKIE_SECURE = True
 
 #### Resource Organization
 ```
-Development: rg-squirll-dev-015
-├── app-squirll-services-dev-015 (Backend API)
-├── app-squirll-web-dev-015 (Frontend)
-├── pg-squirll-dev-015 (PostgreSQL)
-├── redis-squirll-dev-015 (Redis Cache)
-├── stgsquirlldev015 (Storage Account)
-└── ai-squirll-dev-015 (Application Insights)
+Development: rg-receipt_management-dev-015
+├── app-receipt_management-services-dev-015 (Backend API)
+├── app-receipt_management-web-dev-015 (Frontend)
+├── pg-receipt_management-dev-015 (PostgreSQL)
+├── redis-receipt_management-dev-015 (Redis Cache)
+├── stgreceipt_managementdev015 (Storage Account)
+└── ai-receipt_management-dev-015 (Application Insights)
 
-UAT: rg-squirll-uat-015
-├── app-squirll-services-uat-rdy (Backend API)
-├── redis-squirll-uat-rdy (Redis Cache)
+UAT: rg-receipt_management-uat-015
+├── app-receipt_management-services-uat-rdy (Backend API)
+├── redis-receipt_management-uat-rdy (Redis Cache)
 └── Similar structure...
 ```
 
@@ -1258,7 +1258,7 @@ DOCUMENT_INTELLIGENCE_KEY=...
 #### Local Development Setup
 ```bash
 # Use development settings
-export DJANGO_SETTINGS_MODULE=squirll.settings.development
+export DJANGO_SETTINGS_MODULE=receipt_management.settings.development
 
 # Optional Redis (falls back to in-memory)
 export REDIS_HOST=localhost
@@ -1377,4 +1377,4 @@ python manage.py categorize_items --all
 
 ---
 
-This comprehensive guide provides Claude Code with detailed understanding of the Squirll project architecture, patterns, and best practices. Use this information to work effectively with the codebase, understanding the relationships between models, the service layer architecture, and the various integration patterns used throughout the application.
+This comprehensive guide provides Claude Code with detailed understanding of the Receipt Management project architecture, patterns, and best practices. Use this information to work effectively with the codebase, understanding the relationships between models, the service layer architecture, and the various integration patterns used throughout the application.
