@@ -1,6 +1,6 @@
 # AI Expense Tracker
 
-A full-stack expense tracking platform built with Django REST Framework, featuring OCR-powered receipt scanning, automated expense categorization using AI, and real-time analytics dashboards.
+An expense tracking platform built with Django REST Framework, featuring OCR-powered receipt scanning, automated expense categorization using AI, and real-time analytics dashboards.
 
 ## Features
 
@@ -9,8 +9,6 @@ A full-stack expense tracking platform built with Django REST Framework, featuri
 - **Email Integration** - Forward receipts via email for automatic processing with SendGrid Inbound Parse
 - **Real-time Analytics** - Interactive dashboards with spending breakdowns by category, vendor, and time period
 - **Report Generation** - Export expense reports in PDF and CSV formats
-- **AI Chatbot** - Natural language queries for expense data with FAISS vector search
-- **Gamification** - Achievement system to encourage consistent expense tracking
 - **Multi-platform Auth** - OAuth support for Google and Apple, plus phone verification via Twilio
 
 ## Tech Stack
